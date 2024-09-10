@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Room</title>
+    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+    <style>
+        .copy-btn {
+            margin-left: 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .copy-btn:hover {
+            background-color: #0056b3;
+        }
+        .emoji-btn {
+            margin-left: 10px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        .emoji-btn:hover {
+            background-color: #0056b3;
+        }
+        .emoji-container {
+            display: none;
+            margin-top: 10px;
+        }
+        .emoji {
+            cursor: pointer;
+            margin: 5px;
+            font-size: 24px;
+        }
+    </style>
+    <script>
+        const socket = io();
+
+        window.onload = () => {
+            // Retrieve the room details and user name from sessionStorage
+            const roomName = sessionStorage.getItem('roomName');
+            const secretKey = sessionStorage.getItem('secretKey');
+            const userName = sessionStorage.getItem('userName');
+            
+            document.getElementById('copy-room-name').addEventListener('click', () => copyToClipboard(roomName));
+            document.getElementById('copy-secret-key').addEventListener('click', () => copyToClipboard(secretKey));
+            
+            document.getElementById('emoji-btn').addEventListener('click', () => {
+                document.getElementById('emoji-container').style.display = 'block';
+            });
+            
+            document.querySelectorAll('.emoji').forEach(emoji => {
+                emoji.addEventListener('click', () => {
+                    sendMessage(emoji.textContent);
+                    document.getElementById('emoji-container').style.display = 'none';
+                });
+            });
+            
+            socket.emit('join', { room: roomName, user_name: userName });
+        };
+
+        function sendMessage(message) {
+            const inputField = document.getElementById('message');
+            if (!message) {
+                message = inputField.value;
+            }
+            socket.emit('message', { room: sessionStorage.getItem('roomName'), message: message, user_name: sessionStorage.getItem('userName') });
+            inputField.value = '';
+        }
+
+        function leaveRoom() {
+            socket.emit('leave', { room: sessionStorage.getItem('roomName'), user_name: sessionStorage.getItem('userName') });
+            window.location.href = '/';
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text)
+                .then(() => alert('Copied to clipboard'))
+                .catch(err => console.error('Failed to copy: ', err));
+        }
+
+        socket.on('message', function(data) {
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<p>${data}</p>`;
+        });
+    </script>
+</head>
+<body>
+    <h1>Chat Room</h1>
+    <div>
+        <button id="copy-room-name" class="copy-btn">Copy Room Name</button>
+        <button id="copy-secret-key" class="copy-btn">Copy Room Secret</button>
+    </div>
+    <button id="emoji-btn" class="emoji-btn">😊</button>
+    <div id="emoji-container" class="emoji-container">
+        <span class="emoji">😀</span>
+        <span class="emoji">😂</span>
+        <span class="emoji">😍</span>
+        <span class="emoji">😎</span>
+        <span class="emoji">😢</span>
+    </div>
+    <div id="chat"></div>
+    <input type="text" id="message" placeholder="Type a message">
+    <button onclick="sendMessage()">Send</button>
+    <button onclick="leaveRoom()">Leave Room</button>
+</body>
+</html>

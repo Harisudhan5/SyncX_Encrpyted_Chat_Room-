@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Room Application</title>
+    <script src="https://cdn.socket.io/4.5.1/socket.io.min.js"></script>
+    <script>
+        function createRoom() {
+            const userName = document.getElementById('user_name').value;
+            if (!userName) {
+                alert('Please enter your name');
+                return;
+            }
+            fetch('/create_room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_name: userName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    alert(data.message);
+                    return;
+                }
+                const roomName = data.room_name;
+                const secretKey = data.secret_key;
+                sessionStorage.setItem('roomName', roomName);
+                sessionStorage.setItem('secretKey', secretKey);
+                sessionStorage.setItem('userName', userName);
+                window.location.href = '/chat';
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function joinRoom() {
+            const roomName = document.getElementById('room_name').value;
+            const secretKey = document.getElementById('secret_key').value;
+            const userName = document.getElementById('user_name').value;
+            if (!userName) {
+                alert('Please enter your name');
+                return;
+            }
+            fetch('/join_room', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ room_name: roomName, secret_key: secretKey, user_name: userName })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    sessionStorage.setItem('roomName', roomName);
+                    sessionStorage.setItem('secretKey', secretKey);
+                    sessionStorage.setItem('userName', userName);
+                    window.location.href = '/chat';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>Welcome to the Chat Room</h1>
+    <input type="text" id="user_name" placeholder="Enter your name">
+    <button onclick="createRoom()">Create Room</button>
+    <h2>Or Join a Room</h2>
+    <input type="text" id="room_name" placeholder="Room Name">
+    <input type="text" id="secret_key" placeholder="Secret Key">
+    <button onclick="joinRoom()">Join Room</button>
+</body>
+</html>
